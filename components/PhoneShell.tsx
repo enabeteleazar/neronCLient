@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useNeron } from "@/hooks/useNeron";
+import { useIdentity } from "@/hooks/useIdentity";
 import StatusBar from "./StatusBar";
 import FlightCard from "./FlightCard";
 import ChatView from "./ChatView";
@@ -11,6 +12,7 @@ import NavBar from "./NavBar";
 export default function PhoneShell() {
   const [showFlight, setShowFlight] = useState(false);
   const { messages, status, isStreaming, send, clear } = useNeron();
+  const identity = useIdentity();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#06060e] p-4">
@@ -67,7 +69,11 @@ export default function PhoneShell() {
         </div>
 
         {/* Chat — prend tout l'espace restant */}
-        <ChatView messages={messages} isStreaming={isStreaming} />
+        <ChatView
+          messages={messages}
+          isStreaming={isStreaming}
+          identityName={identity.name}
+        />
 
         {/* Bouton clear (visible si messages) */}
         {messages.length > 0 && (
@@ -87,6 +93,7 @@ export default function PhoneShell() {
           onSend={send}
           isStreaming={isStreaming}
           status={status}
+          identityName={identity.name}
         />
 
         {/* Navigation */}

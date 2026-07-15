@@ -17,8 +17,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Néron · Interface",
-  description: "Interface locale de l'assistant Néron",
+  title: "Interface",
+  description: "Interface locale du système",
 };
 
 export const viewport: Viewport = {

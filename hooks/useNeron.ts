@@ -3,8 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatMessage, ConnectionStatus } from "@/lib/types";
 
+// Résolution de l'URL WebSocket :
+// 1. NEXT_PUBLIC_NERON_WS_URL si définie explicitement
+// 2. Sinon construit depuis HOST + PORT
+const _host = process.env.NEXT_PUBLIC_NERON_HOST ?? "localhost";
+const _port = process.env.NEXT_PUBLIC_NERON_PORT ?? "18789";
 const WS_URL =
-  process.env.NEXT_PUBLIC_NERON_WS_URL ?? "ws://localhost:18789";
+  process.env.NEXT_PUBLIC_NERON_WS_URL ?? `ws://${_host}:${_port}`;
 const TOKEN =
   process.env.NEXT_PUBLIC_NERON_TOKEN ?? "changez_moi";
 const RECONNECT_DELAY_MS = 3000;
@@ -64,11 +69,9 @@ export function useNeron(): UseNeronReturn {
         // 2. Création de session
         await rpc("session.new", {
           session_id: sessionIdRef.current,
-          system:
-            "Tu es Néron, un assistant IA local. Tu réponds en français.",
         });
       } catch (err) {
-        console.error("[Néron] erreur init session :", err);
+        console.error("[assistant] erreur init session :", err);
       }
     };
 

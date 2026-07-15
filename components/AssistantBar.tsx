@@ -7,14 +7,8 @@ interface AssistantBarProps {
   onSend: (text: string) => void;
   isStreaming: boolean;
   status: ConnectionStatus;
+  identityName?: string;
 }
-
-const STATUS_LABEL: Record<ConnectionStatus, string> = {
-  connecting:   "Connexion…",
-  connected:    "Néron",
-  disconnected: "Déconnecté",
-  error:        "Erreur",
-};
 
 const STATUS_DOT: Record<ConnectionStatus, string> = {
   connecting:   "bg-amber-400 neron-pulse",
@@ -27,6 +21,7 @@ export default function AssistantBar({
   onSend,
   isStreaming,
   status,
+  identityName,
 }: AssistantBarProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +44,13 @@ export default function AssistantBar({
     [handleSend]
   );
 
+  const statusLabel: Record<ConnectionStatus, string> = {
+    connecting: "Connexion…",
+    connected: identityName ?? "Connecté",
+    disconnected: "Déconnecté",
+    error: "Erreur",
+  };
+
   const canSend =
     value.trim().length > 0 && !isStreaming && status === "connected";
 
@@ -58,7 +60,7 @@ export default function AssistantBar({
       <div className="flex items-center gap-2">
         <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[status]}`} />
         <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
-          {STATUS_LABEL[status]}
+          {statusLabel[status]}
         </span>
         {isStreaming && (
           <span className="ml-auto text-[10px] uppercase tracking-wider text-cyan-400/50">
@@ -82,11 +84,11 @@ export default function AssistantBar({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKey}
           placeholder={
-            status === "connected" ? "Votre message…" : STATUS_LABEL[status]
+            status === "connected" ? "Votre message…" : statusLabel[status]
           }
           disabled={status !== "connected" || isStreaming}
           className="flex-1 bg-transparent text-[13px] text-white/80 placeholder:text-white/20 focus:outline-none disabled:cursor-not-allowed"
-          aria-label="Message à envoyer à Néron"
+          aria-label={`Message à envoyer à ${identityName ?? "l'assistant"}`}
         />
         <button
           onClick={handleSend}

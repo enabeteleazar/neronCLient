@@ -6,9 +6,10 @@ import type { ChatMessage } from "@/lib/types";
 interface ChatViewProps {
   messages: ChatMessage[];
   isStreaming: boolean;
+  identityName?: string;
 }
 
-export default function ChatView({ messages, isStreaming }: ChatViewProps) {
+export default function ChatView({ messages, isStreaming, identityName }: ChatViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll vers le bas à chaque nouveau token
@@ -21,7 +22,7 @@ export default function ChatView({ messages, isStreaming }: ChatViewProps) {
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">
         <NeuralIcon />
         <p className="text-[11px] uppercase tracking-[0.25em] text-white/20">
-          Néron en attente
+          {identityName ? `${identityName} en attente` : "Assistant en attente"}
         </p>
       </div>
     );
