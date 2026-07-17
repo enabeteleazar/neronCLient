@@ -47,6 +47,7 @@ export default function PhoneShell() {
         />
 
         {/* Status bar */}
+        {/* DEMO: donnees statiques, a brancher sur une vraie API meteo/localisation */}
         <StatusBar weather="26°C" city="Paris" />
 
         {/* Section vol (collapsible) */}

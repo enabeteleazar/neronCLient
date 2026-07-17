@@ -14,6 +14,7 @@ interface FlightCardProps {
   flight?: FlightInfo;
 }
 
+// DEMO: vol fictif par defaut, a remplacer par une vraie source de donnees (props ou API)
 const DEFAULT_FLIGHT: FlightInfo = {
   origin: "San Francisco",
   originCode: "SFO",
