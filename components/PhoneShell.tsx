@@ -1,16 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useNeron } from "@/hooks/useNeron";
 import { useIdentity } from "@/hooks/useIdentity";
 import StatusBar from "./StatusBar";
-import FlightCard from "./FlightCard";
 import ChatView from "./ChatView";
 import AssistantBar from "./AssistantBar";
 import NavBar from "./NavBar";
 
 export default function PhoneShell() {
-  const [showFlight, setShowFlight] = useState(false);
   const { messages, status, isStreaming, send, clear } = useNeron();
   const identity = useIdentity();
 
@@ -47,26 +44,8 @@ export default function PhoneShell() {
         />
 
         {/* Status bar */}
+        {/* DEMO: donnees statiques, a brancher sur une vraie API meteo/localisation */}
         <StatusBar weather="26°C" city="Paris" />
-
-        {/* Section vol (collapsible) */}
-        <div className="px-4">
-          <button
-            onClick={() => setShowFlight((v) => !v)}
-            className="flex items-center gap-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white/25 transition-colors hover:text-cyan-400/50"
-            aria-expanded={showFlight}
-            aria-controls="flight-section"
-          >
-            <ChevronIcon expanded={showFlight} />
-            {showFlight ? "Masquer le vol" : "Vol SFO → JFK"}
-          </button>
-
-          {showFlight && (
-            <section id="flight-section" className="pb-2">
-              <FlightCard />
-            </section>
-          )}
-        </div>
 
         {/* Chat — prend tout l'espace restant */}
         <ChatView
@@ -100,29 +79,5 @@ export default function PhoneShell() {
         <NavBar />
       </main>
     </div>
-  );
-}
-
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 10 10"
-      fill="none"
-      aria-hidden="true"
-      style={{
-        transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-        transition: "transform 0.2s ease",
-      }}
-    >
-      <path
-        d="M3 2l4 3-4 3"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
