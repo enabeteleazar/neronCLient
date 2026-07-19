@@ -195,7 +195,7 @@ export function useNeron(): UseNeronReturn {
   const send = useCallback(
     (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || isStreaming) return;
+      if (!trimmed || isStreaming || isThinking) return;
 
       const ws = wsRef.current;
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -225,7 +225,7 @@ export function useNeron(): UseNeronReturn {
         })
       );
     },
-    [isStreaming]
+    [isStreaming, isThinking]
   );
 
   const clear = useCallback(() => {

@@ -72,6 +72,7 @@ export default function PhoneShell() {
         <AssistantBar
           onSend={send}
           isStreaming={isStreaming}
+          isThinking={isThinking}
           status={status}
           identityName={identity.name}
         />

@@ -6,6 +6,7 @@ import type { ConnectionStatus } from "@/lib/types";
 interface AssistantBarProps {
   onSend: (text: string) => void;
   isStreaming: boolean;
+  isThinking: boolean;
   status: ConnectionStatus;
   identityName?: string;
 }
@@ -20,19 +21,21 @@ const STATUS_DOT: Record<ConnectionStatus, string> = {
 export default function AssistantBar({
   onSend,
   isStreaming,
+  isThinking,
   status,
   identityName,
 }: AssistantBarProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const busy = isStreaming || isThinking;
 
   const handleSend = useCallback(() => {
     const text = value.trim();
-    if (!text || isStreaming || status !== "connected") return;
+    if (!text || busy || status !== "connected") return;
     onSend(text);
     setValue("");
     inputRef.current?.focus();
-  }, [value, isStreaming, status, onSend]);
+  }, [value, busy, status, onSend]);
 
   const handleKey = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -52,7 +55,7 @@ export default function AssistantBar({
   };
 
   const canSend =
-    value.trim().length > 0 && !isStreaming && status === "connected";
+    value.trim().length > 0 && !busy && status === "connected";
 
   return (
     <div className="flex flex-col gap-2 border-t border-white/[0.06] px-4 py-3">
@@ -84,9 +87,13 @@ export default function AssistantBar({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKey}
           placeholder={
-            status === "connected" ? "Votre message…" : statusLabel[status]
+            status !== "connected"
+              ? statusLabel[status]
+              : isThinking
+                ? "Néron réfléchit…"
+                : "Votre message…"
           }
-          disabled={status !== "connected" || isStreaming}
+          disabled={status !== "connected" || busy}
           className="flex-1 bg-transparent text-[13px] text-white/80 placeholder:text-white/20 focus:outline-none disabled:cursor-not-allowed"
           aria-label={`Message à envoyer à ${identityName ?? "l'assistant"}`}
         />
