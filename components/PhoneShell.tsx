@@ -8,7 +8,7 @@ import AssistantBar from "./AssistantBar";
 import NavBar from "./NavBar";
 
 export default function PhoneShell() {
-  const { messages, status, isStreaming, send, clear } = useNeron();
+  const { messages, status, isStreaming, isThinking, send, clear } = useNeron();
   const identity = useIdentity();
 
   return (
@@ -51,6 +51,7 @@ export default function PhoneShell() {
         <ChatView
           messages={messages}
           isStreaming={isStreaming}
+          isThinking={isThinking}
           identityName={identity.name}
         />
 

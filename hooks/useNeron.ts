@@ -22,6 +22,7 @@ export interface UseNeronReturn {
   messages: ChatMessage[];
   status: ConnectionStatus;
   isStreaming: boolean;
+  isThinking: boolean;
   send: (text: string) => void;
   clear: () => void;
 }
@@ -30,6 +31,10 @@ export function useNeron(): UseNeronReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [isStreaming, setIsStreaming] = useState(false);
+  // Vrai entre l'envoi du message et le tout premier événement de réponse
+  // (agent.token / agent.done / agent.error). Comble le silence pendant
+  // le traitement backend, potentiellement long (démarrage à froid Ollama).
+  const [isThinking, setIsThinking] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const rpcIdRef = useRef(0);
@@ -105,6 +110,7 @@ export function useNeron(): UseNeronReturn {
 
       if (eventName === "agent.token") {
         const token = (data.token as string) ?? "";
+        setIsThinking(false);
         setIsStreaming(true);
         setMessages((prev) => {
           const last = prev[prev.length - 1];
@@ -131,6 +137,7 @@ export function useNeron(): UseNeronReturn {
       }
 
       if (eventName === "agent.done") {
+        setIsThinking(false);
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last?.role === "assistant" && last.streaming) {
@@ -144,6 +151,7 @@ export function useNeron(): UseNeronReturn {
 
       if (eventName === "agent.error") {
         const msg = (data.message as string) ?? "Erreur inconnue";
+        setIsThinking(false);
         setMessages((prev) => [
           ...prev,
           {
@@ -163,6 +171,7 @@ export function useNeron(): UseNeronReturn {
     ws.onclose = () => {
       setStatus("disconnected");
       setIsStreaming(false);
+      setIsThinking(false);
       if (!unmountedRef.current) {
         setTimeout(connect, RECONNECT_DELAY_MS);
       }
@@ -202,6 +211,7 @@ export function useNeron(): UseNeronReturn {
           timestamp: new Date(),
         },
       ]);
+      setIsThinking(true);
 
       // Envoyer au gateway (fire-and-forget, réponse via events)
       ws.send(
@@ -222,5 +232,5 @@ export function useNeron(): UseNeronReturn {
     setMessages([]);
   }, []);
 
-  return { messages, status, isStreaming, send, clear };
+  return { messages, status, isStreaming, isThinking, send, clear };
 }

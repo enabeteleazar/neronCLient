@@ -58,6 +58,36 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Animation "réflexion" — orbe pulsant + point en orbite */
+@keyframes neron-think-core {
+  0%, 100% { r: 2; opacity: 1; }
+  50% { r: 2.6; opacity: 0.55; }
+}
+
+@keyframes neron-think-ring {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes neron-think-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.neron-think-core {
+  animation: neron-think-core 1.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.neron-think-ring {
+  animation: neron-think-ring 1.6s ease-in-out infinite;
+}
+
+.neron-think-orbit {
+  animation: neron-think-orbit 2.2s linear infinite;
+  transform-origin: 12px 12px;
+}
+
 .neron-pulse {
   animation: neron-pulse 2.4s ease-in-out infinite;
 }

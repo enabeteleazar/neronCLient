@@ -2,14 +2,16 @@
 
 import { useEffect, useRef } from "react";
 import type { ChatMessage } from "@/lib/types";
+import ThinkingIndicator from "./ThinkingIndicator";
 
 interface ChatViewProps {
   messages: ChatMessage[];
   isStreaming: boolean;
+  isThinking: boolean;
   identityName?: string;
 }
 
-export default function ChatView({ messages, isStreaming, identityName }: ChatViewProps) {
+export default function ChatView({ messages, isStreaming, isThinking, identityName }: ChatViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll vers le bas à chaque nouveau token
@@ -33,6 +35,9 @@ export default function ChatView({ messages, isStreaming, identityName }: ChatVi
       {messages.map((msg) => (
         <MessageBubble key={msg.id} message={msg} />
       ))}
+
+      {/* Réflexion : entre l'envoi et le premier token reçu */}
+      {isThinking && !isStreaming && <ThinkingIndicator />}
 
       {/* Indicateur typing pendant le streaming */}
       {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
