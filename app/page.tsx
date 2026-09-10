@@ -1,5 +1,5 @@
-import PhoneShell from "@/components/PhoneShell";
+import ChatShell from "@/components/ChatShell";
 
 export default function Home() {
-  return <PhoneShell />;
+  return <ChatShell />;
 }

@@ -2,14 +2,23 @@
 
 import { useEffect, useRef } from "react";
 import type { ChatMessage } from "@/lib/types";
+import ThinkingIndicator from "./ThinkingIndicator";
 
 interface ChatViewProps {
   messages: ChatMessage[];
   isStreaming: boolean;
+  isThinking: boolean;
   identityName?: string;
+  connectionError?: string | null;
 }
 
-export default function ChatView({ messages, isStreaming, identityName }: ChatViewProps) {
+export default function ChatView({
+  messages,
+  isStreaming,
+  isThinking,
+  identityName,
+  connectionError,
+}: ChatViewProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll vers le bas à chaque nouveau token
@@ -24,22 +33,39 @@ export default function ChatView({ messages, isStreaming, identityName }: ChatVi
         <p className="text-[11px] uppercase tracking-[0.25em] text-white/20">
           {identityName ? `${identityName} en attente` : "Assistant en attente"}
         </p>
+        {connectionError && <ErrorBanner message={connectionError} />}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 py-3">
+    <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 sm:px-6">
       {messages.map((msg) => (
         <MessageBubble key={msg.id} message={msg} />
       ))}
+
+      {/* Réflexion : entre l'envoi et le premier token reçu */}
+      {isThinking && !isStreaming && <ThinkingIndicator />}
 
       {/* Indicateur typing pendant le streaming */}
       {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
         <TypingIndicator />
       )}
 
+      {connectionError && <ErrorBanner message={connectionError} />}
+
       <div ref={bottomRef} />
+    </div>
+  );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="fade-in mx-1 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[12px] text-red-400"
+    >
+      {message}
     </div>
   );
 }
