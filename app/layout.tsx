@@ -17,14 +17,15 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Interface",
-  description: "Interface locale du système",
+  title: "Néron",
+  description: "Interface de conversation avec Néron",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#06060e",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

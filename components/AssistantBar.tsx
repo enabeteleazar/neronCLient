@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ConnectionStatus } from "@/lib/types";
 
 interface AssistantBarProps {
@@ -11,12 +11,7 @@ interface AssistantBarProps {
   identityName?: string;
 }
 
-const STATUS_DOT: Record<ConnectionStatus, string> = {
-  connecting:   "bg-amber-400 neron-pulse",
-  connected:    "bg-cyan-400",
-  disconnected: "bg-white/20",
-  error:        "bg-red-400",
-};
+const MAX_TEXTAREA_HEIGHT = 160;
 
 export default function AssistantBar({
   onSend,
@@ -26,23 +21,32 @@ export default function AssistantBar({
   identityName,
 }: AssistantBarProps) {
   const [value, setValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const busy = isStreaming || isThinking;
+
+  // Auto-grandit la zone de saisie jusqu'à une hauteur max, puis scroll.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+  }, [value]);
 
   const handleSend = useCallback(() => {
     const text = value.trim();
     if (!text || busy || status !== "connected") return;
     onSend(text);
     setValue("");
-    inputRef.current?.focus();
+    textareaRef.current?.focus();
   }, [value, busy, status, onSend]);
 
   const handleKey = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSend();
       }
+      // Shift+Enter : comportement natif (retour à la ligne)
     },
     [handleSend]
   );
@@ -58,31 +62,20 @@ export default function AssistantBar({
     value.trim().length > 0 && !busy && status === "connected";
 
   return (
-    <div className="flex flex-col gap-2 border-t border-white/[0.06] px-4 py-3">
-      {/* Indicateur statut */}
-      <div className="flex items-center gap-2">
-        <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[status]}`} />
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
-          {statusLabel[status]}
-        </span>
-        {isStreaming && (
-          <span className="ml-auto text-[10px] uppercase tracking-wider text-cyan-400/50">
-            écriture…
-          </span>
-        )}
-      </div>
-
-      {/* Input */}
+    <div
+      className="border-t border-white/[0.06] px-4 py-3 sm:px-6"
+      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+    >
       <div
-        className={`flex items-center gap-2 rounded-xl border px-3.5 py-2.5 transition-colors duration-200 ${
+        className={`flex items-end gap-2 rounded-2xl border px-3 py-2 transition-colors duration-200 ${
           status === "connected"
-            ? "border-white/[0.08] bg-white/[0.03] focus-within:border-cyan-400/20 focus-within:bg-white/[0.05]"
+            ? "border-white/[0.08] bg-white/[0.03] focus-within:border-cyan-400/25 focus-within:bg-white/[0.05]"
             : "border-white/[0.04] bg-white/[0.02] opacity-50"
         }`}
       >
-        <input
-          ref={inputRef}
-          type="text"
+        <textarea
+          ref={textareaRef}
+          rows={1}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKey}
@@ -91,17 +84,17 @@ export default function AssistantBar({
               ? statusLabel[status]
               : isThinking
                 ? "Néron réfléchit…"
-                : "Votre message…"
+                : "Écrivez votre message… (Maj+Entrée pour un saut de ligne)"
           }
           disabled={status !== "connected" || busy}
-          className="flex-1 bg-transparent text-[13px] text-white/80 placeholder:text-white/20 focus:outline-none disabled:cursor-not-allowed"
+          className="max-h-40 flex-1 resize-none bg-transparent py-1 text-[14px] leading-relaxed text-white/90 placeholder:text-white/20 focus:outline-none disabled:cursor-not-allowed"
           aria-label={`Message à envoyer à ${identityName ?? "l'assistant"}`}
         />
         <button
           onClick={handleSend}
           disabled={!canSend}
           aria-label="Envoyer"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 ${
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
             canSend
               ? "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30"
               : "cursor-not-allowed text-white/15"
@@ -116,7 +109,7 @@ export default function AssistantBar({
 
 function SendIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"
         stroke="currentColor"

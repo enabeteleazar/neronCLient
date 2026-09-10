@@ -18,18 +18,29 @@ function makeId(): string {
   return Math.random().toString(36).slice(2, 9);
 }
 
+function makeSessionId(): string {
+  return `ui-${makeId()}`;
+}
+
+interface RpcReply {
+  result?: unknown;
+  error?: { code: number; message: string };
+}
+
 export interface UseNeronReturn {
   messages: ChatMessage[];
   status: ConnectionStatus;
+  errorMessage: string | null;
   isStreaming: boolean;
   isThinking: boolean;
   send: (text: string) => void;
-  clear: () => void;
+  newConversation: () => void;
 }
 
 export function useNeron(): UseNeronReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   // Vrai entre l'envoi du message et le tout premier événement de réponse
   // (agent.token / agent.done / agent.error). Comble le silence pendant
@@ -38,46 +49,61 @@ export function useNeron(): UseNeronReturn {
 
   const wsRef = useRef<WebSocket | null>(null);
   const rpcIdRef = useRef(0);
-  const sessionIdRef = useRef(`ui-${makeId()}`);
+  const sessionIdRef = useRef(makeSessionId());
   // Map id → resolve pour les appels JSON-RPC attendus
-  const pendingRef = useRef<Map<number, (v: unknown) => void>>(new Map());
+  const pendingRef = useRef<Map<number, (v: RpcReply) => void>>(new Map());
   // Évite les reconnexions en boucle au démontage
   const unmountedRef = useRef(false);
+
+  // Envoie un appel JSON-RPC sur la connexion active et attend la réponse.
+  const callRpc = useCallback(
+    (method: string, params: Record<string, unknown>): Promise<RpcReply> => {
+      return new Promise((resolve) => {
+        const ws = wsRef.current;
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          resolve({ error: { code: -1, message: "Non connecté" } });
+          return;
+        }
+        const id = ++rpcIdRef.current;
+        pendingRef.current.set(id, resolve);
+        ws.send(JSON.stringify({ id, method, params }));
+      });
+    },
+    []
+  );
 
   const connect = useCallback(() => {
     if (unmountedRef.current) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     setStatus("connecting");
+    setErrorMessage(null);
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
-    // Helper interne : envoie un appel JSON-RPC et attend la réponse
-    function rpc(
-      method: string,
-      params: Record<string, unknown>
-    ): Promise<unknown> {
-      return new Promise((resolve) => {
-        const id = ++rpcIdRef.current;
-        pendingRef.current.set(id, resolve);
-        ws.send(JSON.stringify({ id, method, params }));
-      });
-    }
-
     ws.onopen = async () => {
-      setStatus("connected");
-
-      try {
-        // 1. Authentification (requise même avec le token par défaut)
-        await rpc("gateway.auth", { token: TOKEN });
-
-        // 2. Création de session
-        await rpc("session.new", {
-          session_id: sessionIdRef.current,
-        });
-      } catch (err) {
-        console.error("[assistant] erreur init session :", err);
+      // 1. Authentification (requise même avec le token par défaut)
+      const authReply = await callRpc("gateway.auth", { token: TOKEN });
+      if (authReply.error) {
+        setStatus("error");
+        setErrorMessage("Authentification refusée par le serveur Néron.");
+        ws.close();
+        return;
       }
+
+      // 2. Création de session
+      const sessionReply = await callRpc("session.new", {
+        session_id: sessionIdRef.current,
+      });
+      if (sessionReply.error) {
+        setStatus("error");
+        setErrorMessage("Impossible d'initialiser la conversation.");
+        ws.close();
+        return;
+      }
+
+      setStatus("connected");
+      setErrorMessage(null);
     };
 
     ws.onmessage = (event) => {
@@ -94,7 +120,10 @@ export function useNeron(): UseNeronReturn {
         const resolve = pendingRef.current.get(id);
         if (resolve) {
           pendingRef.current.delete(id);
-          resolve((frame.result ?? frame.error) || null);
+          resolve({
+            result: frame.result,
+            error: frame.error as RpcReply["error"],
+          });
         }
         return;
       }
@@ -169,7 +198,7 @@ export function useNeron(): UseNeronReturn {
     };
 
     ws.onclose = () => {
-      setStatus("disconnected");
+      setStatus((prev) => (prev === "error" ? prev : "disconnected"));
       setIsStreaming(false);
       setIsThinking(false);
       if (!unmountedRef.current) {
@@ -179,9 +208,10 @@ export function useNeron(): UseNeronReturn {
 
     ws.onerror = () => {
       setStatus("error");
+      setErrorMessage("Connexion au serveur Néron impossible.");
       ws.close();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [callRpc]);
 
   useEffect(() => {
     unmountedRef.current = false;
@@ -228,9 +258,24 @@ export function useNeron(): UseNeronReturn {
     [isStreaming, isThinking]
   );
 
-  const clear = useCallback(() => {
+  // Démarre une nouvelle conversation : nouvelle session côté serveur (pour
+  // ne pas hériter du contexte précédent) et purge locale des messages.
+  const newConversation = useCallback(() => {
+    if (isStreaming || isThinking) return;
+    sessionIdRef.current = makeSessionId();
     setMessages([]);
-  }, []);
+    if (status === "connected") {
+      callRpc("session.new", { session_id: sessionIdRef.current });
+    }
+  }, [callRpc, isStreaming, isThinking, status]);
 
-  return { messages, status, isStreaming, isThinking, send, clear };
+  return {
+    messages,
+    status,
+    errorMessage,
+    isStreaming,
+    isThinking,
+    send,
+    newConversation,
+  };
 }
